@@ -1,0 +1,3 @@
+* Dotspacemacs
+
+My .spacemacs configuration
