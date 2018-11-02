@@ -81,6 +81,14 @@ This function should only modify configuration layer settings."
      treemacs
      asm
      react
+     sql
+     haskell
+     better-defaults
+     (erc :variables
+          erc-server-list
+          '(("irc.ppy.sh"
+             :port 6667))
+          erc-enable-notifications nil)
      )
 
    ;; List of additional packages that will be installed without being
@@ -543,6 +551,79 @@ before packages are loaded."
   (add-to-list 'spacemacs-useful-buffers-regexp "\\*\\(ansi-term\\|eshell\\|shell\\|terminal.+\\)\\(-[0-9]+\\)?\\*")
   (add-to-list 'spacemacs-useful-buffers-regexp "\\*scratch\\*")
   (add-to-list 'spacemacs-useful-buffers-regexp "\\*magit\.\+")
+  (add-to-list 'spacemacs-useful-buffers-regexp "\\*slime-repl.+\\*")
+  (setq erc-hide-list '("JOIN" "PART" "QUIT"))
+  (setq erc-autojoin-channels-alist
+        '(("irc.ppy.sh" "#chinese" "#osu")))
+  (setq epa-pinentry-mode 'loopback)
+
+  ;; erc-notifications-notify
+  ;; This ways from https://emacs.stackexchange.com/a/29713
+  (defun erc-notifications-notify (title message)
+    "Used applescript ways show messages."
+    ;; (message (concat title message))
+    (do-applescript
+     (format "display notification \"%s\" with title \"%s\"" message title)))
+
+  ;; (defun erc-notifications-test (title message)
+    ;; (message
+     ;; (format "display notification \"%s\" with \"%s\"" message title)))
+
+  ;; rewritten erc-notification package
+  ;; https://emacsformacosx.com/emacs-bzr/trunk/lisp/erc/erc-notifications.el
+  ;; This file is not part of GNU Emacs.
+  ;;; Copyright:
+
+  ;;;; erc-notifications.el -- Send notification on PRIVMSG or mentions
+
+  ;;;; Copyright (C) 2012 Free Software Foundation, Inc.
+
+  ;;;; Author: Julien Danjou <julien@danjou.info>
+  ;;;; Keywords: comm
+
+  ;;;; This file is part of GNU Emacs.
+
+  ;;;; GNU Emacs is free software: you can redistribute it and/or modify
+  ;;;; it under the terms of the GNU General Public License as published by
+  ;;;; the Free Software Foundation, either version 3 of the License, or
+  ;;;; (at your option) any later version.
+
+  ;;;; GNU Emacs is distributed in the hope that it will be useful,
+  ;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ;;;; GNU General Public License for more details.
+
+  ;;;; You should have received a copy of the GNU General Public License
+  ;;;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+
+  ;;;;; Commentary:
+
+  ;;;; This implements notifications using `notifications-notify' on
+  ;;;; PRIVMSG received and on public nickname mentions.
+
+  (defun erc-notification-text-matched (match-type nick message)
+    "Show a notification."
+    (when (eq match-type 'current-nick)
+      (unless (posix-string-match "^\\** *Users on #" message)
+        (erc-notifications-notify
+        ;; (erc-notifications-test
+         (concat "ERC " (buffer-name (current-buffer)))
+         (concat "<" (nth 0 (erc-parse-user nick)) "> " message)))))
+
+  (defun erc-notifications-private-message (proc parsed)
+    (let ((nick (car (erc-parse-user (erc-response.sender parsed))))
+          (target (car (erc-response.command-args parsed)))
+          (msg (erc-response.contents parsed)))
+      (when (and (erc-current-nick-p target)
+                 (not (and (boundp 'erc-track-exclude)
+                           (member nick erc-track-exclude)))
+                 (not (erc-is-message-ctcp-and-not-action-p msg)))
+        (erc-notifications-notify nick msg)))
+    nil)
+
+  (add-hook 'erc-text-matched-hook 'erc-notification-text-matched)
+  (add-hook 'erc-server-PRIVMSG-functions 'erc-notifications-private-message)
+
   )
 
 ;; Do not write anything past this comment. This is where Emacs will
@@ -557,9 +638,13 @@ This function is called at the very end of Spacemacs initialization."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(erc-modules
+   (quote
+    (autojoin completion log match services image youtube hl-nicks netsplit fill button track readonly networks ring noncommands irccontrols move-to-prompt stamp menu list)))
+ '(erc-rename-buffers t)
  '(package-selected-packages
    (quote
-    (rjsx-mode yapfify xterm-color x86-lookup ws-butler winum which-key web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package toc-org tagedit swift-mode spaceline powerline smeargle slime-company slime slim-mode shell-pop scss-mode sass-mode reveal-in-osx-finder restart-emacs rainbow-mode rainbow-identifiers rainbow-delimiters pyvenv pytest pyenv-mode py-isort pug-mode popwin pip-requirements persp-mode pcre2el pbcopy paradox ox-pandoc ox-gfm osx-trash osx-dictionary orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-plus-contrib org-mime org-download org-bullets open-junk-file ob-ipython neotree nasm-mode multi-term move-text mmm-mode markdown-toc magit-gitflow magit-gh-pulls macrostep lorem-ipsum livid-mode skewer-mode simple-httpd live-py-mode linum-relative link-hint launchctl json-mode json-snatcher json-reformat js2-refactor js2-mode js-doc insert-shebang indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make projectile helm-gitignore request helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag haml-mode google-translate golden-ratio gnuplot gmail-message-mode ham-mode markdown-mode html-to-markdown gitignore-mode github-search github-clone github-browse-file gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gist gh marshal logito pcache ht gh-md fuzzy flymd flycheck-pos-tip flycheck flx-ido flx fish-mode fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit magit magit-popup git-commit ghub treepy graphql with-editor evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dumb-jump disaster diminish cython-mode csv-mode company-web web-completion-data company-tern dash-functional tern company-statistics company-shell company-quickhelp pos-tip company-emacs-eclim eclim company-c-headers company-auctex company-anaconda company common-lisp-snippets column-enforce-mode color-identifiers-mode coffee-mode cmake-mode clojure-snippets clj-refactor hydra inflections edn multiple-cursors paredit peg clean-aindent-mode clang-format cider-eval-sexp-fu eval-sexp-fu highlight cider sesman spinner queue pkg-info clojure-mode epl bind-map bind-key auto-yasnippet yasnippet auto-highlight-symbol auto-compile packed auctex anaconda-mode pythonic f dash s aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core async ac-ispell auto-complete popup))))
+    (erc-yt erc-view-log erc-terminal-notifier erc-social-graph erc-image erc-hl-nicks yapfify xterm-color x86-lookup ws-butler winum which-key web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package toc-org tagedit swift-mode spaceline powerline smeargle slime-company slime slim-mode shell-pop scss-mode sass-mode reveal-in-osx-finder restart-emacs rainbow-mode rainbow-identifiers rainbow-delimiters pyvenv pytest pyenv-mode py-isort pug-mode popwin pip-requirements persp-mode pcre2el pbcopy paradox ox-pandoc ox-gfm osx-trash osx-dictionary orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-plus-contrib org-mime org-download org-bullets open-junk-file ob-ipython neotree nasm-mode multi-term move-text mmm-mode markdown-toc magit-gitflow magit-gh-pulls macrostep lorem-ipsum livid-mode skewer-mode simple-httpd live-py-mode linum-relative link-hint launchctl json-mode json-snatcher json-reformat js2-refactor js2-mode js-doc insert-shebang indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make projectile helm-gitignore request helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag haml-mode google-translate golden-ratio gnuplot gmail-message-mode ham-mode markdown-mode html-to-markdown gitignore-mode github-search github-clone github-browse-file gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gist gh marshal logito pcache ht gh-md fuzzy flymd flycheck-pos-tip flycheck flx-ido flx fish-mode fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit magit magit-popup git-commit ghub treepy graphql with-editor evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dumb-jump disaster diminish cython-mode csv-mode company-web web-completion-data company-tern dash-functional tern company-statistics company-shell company-quickhelp pos-tip company-emacs-eclim eclim company-c-headers company-auctex company-anaconda company common-lisp-snippets column-enforce-mode color-identifiers-mode coffee-mode cmake-mode clojure-snippets clj-refactor hydra inflections edn multiple-cursors paredit peg clean-aindent-mode clang-format cider-eval-sexp-fu eval-sexp-fu highlight cider sesman spinner queue pkg-info clojure-mode epl bind-map bind-key auto-yasnippet yasnippet auto-highlight-symbol auto-compile packed auctex anaconda-mode pythonic f dash s aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core async ac-ispell auto-complete popup))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
