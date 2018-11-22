@@ -87,8 +87,9 @@ This function should only modify configuration layer settings."
      (erc :variables
           erc-server-list
           '(("irc.ppy.sh"
-             :port 6667))
+             :port 6667"))
           erc-enable-notifications nil)
+     scheme
      )
 
    ;; List of additional packages that will be installed without being
@@ -514,6 +515,11 @@ before packages are loaded."
   (add-hook 'doc-view-mode-hook 'auto-revert-mode)
   (add-hook 'lisp-mode-hook #'enable-paredit-mode)
   (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
+  (add-hook 'scheme-mode-hook #'enable-paredit-mode)
+  (setq geiser-active-implementations '(chez))
+  (setq geiser-mode-start-repl-p t)
+  (with-eval-after-load 'geiser
+    (company-quickhelp-mode 1))
   (add-hook 'slime-repl-mode-hook
             (lambda ()
               (define-key slime-repl-mode-map (kbd "<down>") 'slime-repl-forward-input)
@@ -523,6 +529,7 @@ before packages are loaded."
             (lambda ()
               (setq truncate-lines nil)
               (org-indent-mode t)
+              (hl-todo-mode -1)
               ))
   (with-eval-after-load 'org
     (org-babel-do-load-languages
@@ -563,7 +570,7 @@ before packages are loaded."
     "Used applescript ways show messages."
     ;; (message (concat title message))
     (do-applescript
-     (format "display notification \"%s\" with title \"%s\"" message title)))
+     (format "display notification \"%s\" with title \"%s\" sound name \"Tink\"" message title)))
 
   ;; (defun erc-notifications-test (title message)
     ;; (message
@@ -618,12 +625,20 @@ before packages are loaded."
                  (not (and (boundp 'erc-track-exclude)
                            (member nick erc-track-exclude)))
                  (not (erc-is-message-ctcp-and-not-action-p msg)))
+
         (erc-notifications-notify nick msg)))
     nil)
 
-  (add-hook 'erc-text-matched-hook 'erc-notification-text-matched)
-  (add-hook 'erc-server-PRIVMSG-functions 'erc-notifications-private-message)
+  (add-hook 'focus-out-hook
+            (lambda ()
+              (add-hook 'erc-text-matched-hook 'erc-notification-text-matched)
+              (add-hook 'erc-server-PRIVMSG-functions 'erc-notifications-private-message)
+              ))
 
+  (add-hook 'focus-in-hook
+            (lambda ()
+              (remove-hook 'erc-text-matched-hook 'erc-notification-text-matched)
+              (remove-hook 'erc-server-PRIVMSG-functions 'erc-notifications-private-message)))
   )
 
 ;; Do not write anything past this comment. This is where Emacs will
@@ -638,13 +653,9 @@ This function is called at the very end of Spacemacs initialization."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(erc-modules
-   (quote
-    (autojoin completion log match services image youtube hl-nicks netsplit fill button track readonly networks ring noncommands irccontrols move-to-prompt stamp menu list)))
- '(erc-rename-buffers t)
  '(package-selected-packages
    (quote
-    (erc-yt erc-view-log erc-terminal-notifier erc-social-graph erc-image erc-hl-nicks yapfify xterm-color x86-lookup ws-butler winum which-key web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package toc-org tagedit swift-mode spaceline powerline smeargle slime-company slime slim-mode shell-pop scss-mode sass-mode reveal-in-osx-finder restart-emacs rainbow-mode rainbow-identifiers rainbow-delimiters pyvenv pytest pyenv-mode py-isort pug-mode popwin pip-requirements persp-mode pcre2el pbcopy paradox ox-pandoc ox-gfm osx-trash osx-dictionary orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-plus-contrib org-mime org-download org-bullets open-junk-file ob-ipython neotree nasm-mode multi-term move-text mmm-mode markdown-toc magit-gitflow magit-gh-pulls macrostep lorem-ipsum livid-mode skewer-mode simple-httpd live-py-mode linum-relative link-hint launchctl json-mode json-snatcher json-reformat js2-refactor js2-mode js-doc insert-shebang indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make projectile helm-gitignore request helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag haml-mode google-translate golden-ratio gnuplot gmail-message-mode ham-mode markdown-mode html-to-markdown gitignore-mode github-search github-clone github-browse-file gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gist gh marshal logito pcache ht gh-md fuzzy flymd flycheck-pos-tip flycheck flx-ido flx fish-mode fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit magit magit-popup git-commit ghub treepy graphql with-editor evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dumb-jump disaster diminish cython-mode csv-mode company-web web-completion-data company-tern dash-functional tern company-statistics company-shell company-quickhelp pos-tip company-emacs-eclim eclim company-c-headers company-auctex company-anaconda company common-lisp-snippets column-enforce-mode color-identifiers-mode coffee-mode cmake-mode clojure-snippets clj-refactor hydra inflections edn multiple-cursors paredit peg clean-aindent-mode clang-format cider-eval-sexp-fu eval-sexp-fu highlight cider sesman spinner queue pkg-info clojure-mode epl bind-map bind-key auto-yasnippet yasnippet auto-highlight-symbol auto-compile packed auctex anaconda-mode pythonic f dash s aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core async ac-ispell auto-complete popup))))
+    (geiser yapfify xterm-color x86-lookup ws-butler winum which-key web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package toc-org tagedit swift-mode spaceline powerline smeargle slime-company slime slim-mode shell-pop scss-mode sass-mode reveal-in-osx-finder restart-emacs rainbow-mode rainbow-identifiers rainbow-delimiters pyvenv pytest pyenv-mode py-isort pug-mode popwin pip-requirements persp-mode pcre2el pbcopy paradox ox-pandoc ox-gfm osx-trash osx-dictionary orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-plus-contrib org-mime org-download org-bullets open-junk-file ob-ipython neotree nasm-mode multi-term move-text mmm-mode markdown-toc magit-gitflow magit-gh-pulls macrostep lorem-ipsum livid-mode skewer-mode simple-httpd live-py-mode linum-relative link-hint launchctl json-mode json-snatcher json-reformat js2-refactor js2-mode js-doc insert-shebang indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make projectile helm-gitignore request helm-flx helm-descbinds helm-css-scss helm-company helm-c-yasnippet helm-ag haml-mode google-translate golden-ratio gnuplot gmail-message-mode ham-mode markdown-mode html-to-markdown gitignore-mode github-search github-clone github-browse-file gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gist gh marshal logito pcache ht gh-md fuzzy flymd flycheck-pos-tip flycheck flx-ido flx fish-mode fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit magit magit-popup git-commit ghub treepy graphql with-editor evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dumb-jump disaster diminish cython-mode csv-mode company-web web-completion-data company-tern dash-functional tern company-statistics company-shell company-quickhelp pos-tip company-emacs-eclim eclim company-c-headers company-auctex company-anaconda company common-lisp-snippets column-enforce-mode color-identifiers-mode coffee-mode cmake-mode clojure-snippets clj-refactor hydra inflections edn multiple-cursors paredit peg clean-aindent-mode clang-format cider-eval-sexp-fu eval-sexp-fu highlight cider sesman spinner queue pkg-info clojure-mode epl bind-map bind-key auto-yasnippet yasnippet auto-highlight-symbol auto-compile packed auctex anaconda-mode pythonic f dash s aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core async ac-ispell auto-complete popup))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
